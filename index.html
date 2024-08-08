@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Search App</title>
+    <title>Movie Search</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
+    <header>
         <h1>Movie Search</h1>
-        <div class="search-container">
-            <input type="text" id="movie-input" placeholder="Search by title, actor, director, or writer">
+        <div id="search-bar">
+            <input type="text" id="movie-input" placeholder="Search for a movie...">
             <select id="search-type">
                 <option value="title">Title</option>
                 <option value="actor">Actor</option>
@@ -19,9 +19,12 @@
             </select>
             <button id="search-button">Search</button>
         </div>
-        <div id="movie-grid" class="movie-grid"></div>
-        <div id="pagination" class="pagination"></div>
-    </div>
+    </header>
+    <main>
+        <div id="movie-grid" class="grid-container">
+            <!-- Movies will be displayed here -->
+        </div>
+    </main>
     <script src="script.js"></script>
 </body>
 </html>

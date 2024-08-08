@@ -1,80 +1,106 @@
-const apiKey = '2c4b917e'; // Replace with your actual API key
-let currentPage = 1;
-const moviesPerPage = 20; // 4x5 grid
+document.addEventListener('DOMContentLoaded', function() {
+    const apiKey = '2c4b917e'; // Replace with your actual API key
 
-document.getElementById('search-button').addEventListener('click', function() {
-    const searchType = document.getElementById('search-type').value;
-    const searchTerm = document.getElementById('movie-input').value.trim();
-    currentPage = 1; // Reset to first page on new search
+    // List of IMDb IDs for 8 popular movies
+    const popularMovies = [
+        "tt0111161", // The Shawshank Redemption
+        "tt0068646", // The Godfather
+        "tt0071562", // The Godfather: Part II
+        "tt0468569", // The Dark Knight
+        "tt0050083", // 12 Angry Men
+        "tt0108052", // Schindler's List
+        "tt0110912", // Pulp Fiction
+        "tt0167260"  // The Lord of the Rings: The Return of the King
+    ];
 
-    if (!searchTerm) {
-        document.getElementById('movie-grid').innerHTML = `<p>Please enter a search term.</p>`;
-        return;
-    }
+    function displayMovies(movieIds) {
+        let movieGrid = document.getElementById('movie-grid');
+        movieGrid.innerHTML = '';
 
-    searchMovies(searchType, searchTerm, currentPage);
-});
+        movieIds.forEach(movieId => {
+            let apiUrl = `https://www.omdbapi.com/?i=${movieId}&apikey=${apiKey}&plot=full&r=json`;
 
-function searchMovies(searchType, searchTerm, page) {
-    let apiUrl = '';
-    
-    switch (searchType) {
-        case 'title':
-            apiUrl = `https://www.omdbapi.com/?s=${encodeURIComponent(searchTerm)}&apikey=${apiKey}&type=movie&page=${page}`;
-            break;
-        case 'actor':
-        case 'director':
-        case 'writer':
-            apiUrl = `https://www.omdbapi.com/?s=${encodeURIComponent(searchTerm)}&apikey=${apiKey}&type=movie&page=${page}`;
-            break;
-        default:
-            apiUrl = `https://www.omdbapi.com/?s=${encodeURIComponent(searchTerm)}&apikey=${apiKey}&type=movie&page=${page}`;
-            break;
-    }
-
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            if (data.Response === "True") {
-                displayMovies(data.Search);
-                setupPagination(data.totalResults);
-            } else {
-                document.getElementById('movie-grid').innerHTML = `<p>No results found. Please try again.</p>`;
-            }
-        })
-        .catch(error => {
-            document.getElementById('movie-grid').innerHTML = `<p>Error fetching data. Please try again later.</p>`;
-            console.error('Error:', error);
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.Response === "True") {
+                        let movieCard = `
+                            <div>
+                                <h2>${data.Title}</h2>
+                                <img src="${data.Poster}" alt="${data.Title}">
+                                <p><strong>Year:</strong> ${data.Year}</p>
+                                <p><strong>Genre:</strong> ${data.Genre}</p>
+                            </div>
+                        `;
+                        movieGrid.innerHTML += movieCard;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
         });
-}
+    }
 
-function displayMovies(movies) {
-    const movieGrid = document.getElementById('movie-grid');
-    movieGrid.innerHTML = movies.map(movie => `
-        <div class="movie-card">
-            <img src="${movie.Poster !== 'N/A' ? movie.Poster : 'https://via.placeholder.com/300x450?text=No+Image'}" alt="${movie.Title}">
-            <h2>${movie.Title}</h2>
-            <p><strong>Year:</strong> ${movie.Year}</p>
-        </div>
-    `).join('');
-}
+    // Display 8 popular movies by default
+    displayMovies(popularMovies);
 
-function setupPagination(totalResults) {
-    const pagination = document.getElementById('pagination');
-    const totalPages = Math.ceil(totalResults / moviesPerPage);
-    
-    pagination.innerHTML = `
-        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-        <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
-    `;
-}
+    document.getElementById('search-button').addEventListener('click', function() {
+        const searchType = document.getElementById('search-type').value;
+        const searchTerm = document.getElementById('movie-input').value;
+        let apiUrl = '';
 
-function changePage(newPage) {
-    if (newPage < 1) return;
-    currentPage = newPage;
-    
-    const searchType = document.getElementById('search-type').value;
-    const searchTerm = document.getElementById('movie-input').value.trim();
-    
-    searchMovies(searchType, searchTerm, currentPage);
-}
+        // Base URL construction based on search type
+        switch (searchType) {
+            case 'title':
+                apiUrl = `https://www.omdbapi.com/?t=${searchTerm}&apikey=${apiKey}&plot=full&r=json`;
+                break;
+            case 'actor':
+                apiUrl = `https://www.omdbapi.com/?s=${searchTerm}&apikey=${apiKey}&type=movie&r=json&page=1`; 
+                break;
+            case 'director':
+                apiUrl = `https://www.omdbapi.com/?s=${searchTerm}&apikey=${apiKey}&type=movie&r=json&page=1`; 
+                break;
+            case 'writer':
+                apiUrl = `https://www.omdbapi.com/?s=${searchTerm}&apikey=${apiKey}&type=movie&r=json&page=1`; 
+                break;
+            default:
+                apiUrl = `https://www.omdbapi.com/?t=${searchTerm}&apikey=${apiKey}&plot=full&r=json`;
+                break;
+        }
+
+        // Fetch data from OMDB API
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                let movieGrid = document.getElementById('movie-grid');
+                movieGrid.innerHTML = ''; // Clear previous results
+                
+                if (data.Response === "True") {
+                    if (searchType === 'title') {
+                        movieGrid.innerHTML = `
+                            <div>
+                                <h2>${data.Title}</h2>
+                                <img src="${data.Poster}" alt="${data.Title}">
+                                <p><strong>Year:</strong> ${data.Year}</p>
+                                <p><strong>Genre:</strong> ${data.Genre}</p>
+                                <p><strong>Plot:</strong> ${data.Plot}</p>
+                            </div>
+                        `;
+                    } else {
+                        const movies = data.Search.map(movie => `
+                            <div>
+                                <h2>${movie.Title}</h2>
+                                <img src="${movie.Poster}" alt="${movie.Title}">
+                                <p><strong>Year:</strong> ${movie.Year}</p>
+                            </div>
+                        `).join('');
+                        movieGrid.innerHTML = movies;
+                    }
+                } else {
+                    movieGrid.innerHTML = `<p>No results found. Please try again.</p>`;
+                }
+            })
+            .catch(error => {
+                movieGrid.innerHTML = `<p>Error fetching data. Please try again later.</p>`;
+                console.error('Error:', error);
+            });
+    });
+});
