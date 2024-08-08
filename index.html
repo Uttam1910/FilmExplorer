@@ -9,17 +9,18 @@
 <body>
     <div class="container">
         <h1>Movie Search</h1>
-        <div class="search-bar">
+        <div class="search-container">
+            <input type="text" id="movie-input" placeholder="Search by title, actor, director, or writer">
             <select id="search-type">
                 <option value="title">Title</option>
                 <option value="actor">Actor</option>
                 <option value="director">Director</option>
                 <option value="writer">Writer</option>
             </select>
-            <input type="text" id="movie-input" placeholder="Enter search term...">
             <button id="search-button">Search</button>
         </div>
-        <div id="movie-details"></div>
+        <div id="movie-grid" class="movie-grid"></div>
+        <div id="pagination" class="pagination"></div>
     </div>
     <script src="script.js"></script>
 </body>
