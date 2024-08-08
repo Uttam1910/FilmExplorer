@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Search App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Movie Search</h1>
+        <div class="search-bar">
+            <select id="search-type">
+                <option value="title">Title</option>
+                <option value="actor">Actor</option>
+                <option value="director">Director</option>
+                <option value="writer">Writer</option>
+            </select>
+            <input type="text" id="movie-input" placeholder="Enter search term...">
+            <button id="search-button">Search</button>
+        </div>
+        <div id="movie-details"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
