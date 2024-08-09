@@ -4,56 +4,64 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPage = 1;
     let totalResults = 0;
 
-    // Function to fetch and display movies based on page number
-    function fetchAndDisplayMovies(page = 1) {
-        let apiUrl = `https://www.omdbapi.com/?s=batman&apikey=${apiKey}&type=movie&r=json&page=${page}`;
-        console.log("Fetching movies from:", apiUrl);
+    // Function to fetch and display movies based on page number and search term
+    function fetchAndDisplayMovies(page = 1, searchTerm = 'batman') {
+        let searchUrl = `https://www.omdbapi.com/?s=${searchTerm}&apikey=${apiKey}&type=movie&r=json&page=${page}`;
+        let titleUrl = `https://www.omdbapi.com/?t=${searchTerm}&apikey=${apiKey}&plot=full&r=json`;
 
-        fetch(apiUrl)
+        // Fetch the exact title match first
+        fetch(titleUrl)
             .then(response => response.json())
-            .then(data => {
-                console.log("API Response:", data); // Log the API response for debugging
-                if (data.Response === "True") {
-                    totalResults = parseInt(data.totalResults, 10);
-                    let movies = data.Search;
+            .then(titleData => {
+                if (titleData.Response === "True") {
+                    // Fetch other movies that match the search term
+                    fetch(searchUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("API Response:", data); // Log the API response for debugging
+                            if (data.Response === "True") {
+                                totalResults = parseInt(data.totalResults, 10);
+                                let movies = data.Search;
 
-                    // Check if the current page has fewer than 12 movies, and fetch additional movies if needed
-                    if (movies.length < moviesPerPage && page * 10 < totalResults) {
-                        fetchAdditionalMovies(page + 1, movies, moviesPerPage - movies.length);
-                    } else {
-                        displayMovies(movies);
-                        displayPagination();
-                    }
+                                // Remove the exact match from the search results to avoid duplication
+                                movies = movies.filter(movie => movie.imdbID !== titleData.imdbID);
+
+                                // Combine the exact match with other movies
+                                movies.unshift(titleData);
+
+                                displayMovies(movies);
+                                displayPagination();
+                            } else {
+                                document.getElementById('movie-grid').innerHTML = `<p>No results found. Please try again.</p>`;
+                            }
+                        })
+                        .catch(error => {
+                            document.getElementById('movie-grid').innerHTML = `<p>Error fetching data. Please try again later.</p>`;
+                            console.error('Error:', error);
+                        });
                 } else {
-                    document.getElementById('movie-grid').innerHTML = `<p>No results found. Please try again.</p>`;
+                    fetch(searchUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("API Response:", data); // Log the API response for debugging
+                            if (data.Response === "True") {
+                                totalResults = parseInt(data.totalResults, 10);
+                                let movies = data.Search;
+                                displayMovies(movies);
+                                displayPagination();
+                            } else {
+                                document.getElementById('movie-grid').innerHTML = `<p>No results found. Please try again.</p>`;
+                            }
+                        })
+                        .catch(error => {
+                            document.getElementById('movie-grid').innerHTML = `<p>Error fetching data. Please try again later.</p>`;
+                            console.error('Error:', error);
+                        });
                 }
             })
             .catch(error => {
                 document.getElementById('movie-grid').innerHTML = `<p>Error fetching data. Please try again later.</p>`;
                 console.error('Error:', error);
-            });
-    }
-
-    // Function to fetch additional movies if less than 12 were returned
-    function fetchAdditionalMovies(nextPage, currentMovies, remainingSlots) {
-        let apiUrl = `https://www.omdbapi.com/?s=batman&apikey=${apiKey}&type=movie&r=json&page=${nextPage}`;
-        console.log("Fetching additional movies from:", apiUrl);
-
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                if (data.Response === "True") {
-                    let moreMovies = data.Search.slice(0, remainingSlots);
-                    displayMovies(currentMovies.concat(moreMovies));
-                } else {
-                    displayMovies(currentMovies);
-                }
-                displayPagination();
-            })
-            .catch(error => {
-                displayMovies(currentMovies);
-                displayPagination();
-                console.error('Error fetching additional movies:', error);
             });
     }
 
@@ -68,6 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h2>${movie.Title}</h2>
                     <img src="${movie.Poster !== 'N/A' ? movie.Poster : 'placeholder.jpg'}" alt="${movie.Title}">
                     <p><strong>Year:</strong> ${movie.Year}</p>
+                    <p><strong>Type:</strong> ${movie.Type}</p>
+                    <p><strong>IMDb ID:</strong> ${movie.imdbID}</p>
                 </div>
             `;
             movieGrid.innerHTML += movieCard;
@@ -89,14 +99,14 @@ document.addEventListener('DOMContentLoaded', function() {
         prevButton.onclick = function() {
             if (currentPage > 1) {
                 currentPage--;
-                fetchAndDisplayMovies(currentPage);
+                fetchAndDisplayMovies(currentPage, document.getElementById('movie-input').value);
             }
         };
 
         nextButton.onclick = function() {
             if (currentPage < totalPages) {
                 currentPage++;
-                fetchAndDisplayMovies(currentPage);
+                fetchAndDisplayMovies(currentPage, document.getElementById('movie-input').value);
             }
         };
     }
@@ -106,60 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listener for the search functionality
     document.getElementById('search-button').addEventListener('click', function() {
-        const searchType = document.getElementById('search-type').value;
-        const searchTerm = document.getElementById('movie-input').value;
-        let apiUrl = '';
-
-        // Base URL construction based on search type
-        switch (searchType) {
-            case 'title':
-                apiUrl = `https://www.omdbapi.com/?t=${searchTerm}&apikey=${apiKey}&plot=full&r=json`;
-                break;
-            case 'actor':
-            case 'director':
-            case 'writer':
-                apiUrl = `https://www.omdbapi.com/?s=${searchTerm}&apikey=${apiKey}&type=movie&r=json&page=1`; 
-                break;
-            default:
-                apiUrl = `https://www.omdbapi.com/?t=${searchTerm}&apikey=${apiKey}&plot=full&r=json`;
-                break;
-        }
-
-        console.log("Searching with URL:", apiUrl);
-
-        // Fetch data from OMDB API
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                let movieGrid = document.getElementById('movie-grid');
-                movieGrid.innerHTML = ''; // Clear previous results
-                
-                console.log("Search API Response:", data); // Log the API response for debugging
-
-                if (data.Response === "True") {
-                    if (searchType === 'title') {
-                        movieGrid.innerHTML = `
-                            <div>
-                                <h2>${data.Title}</h2>
-                                <img src="${data.Poster !== 'N/A' ? data.Poster : 'placeholder.jpg'}" alt="${data.Title}">
-                                <p><strong>Year:</strong> ${data.Year}</p>
-                                <p><strong>Genre:</strong> ${data.Genre}</p>
-                                <p><strong>Plot:</strong> ${data.Plot}</p>
-                            </div>
-                        `;
-                    } else {
-                        displayMovies(data.Search);
-                        totalResults = data.totalResults; // Update total results for search
-                        currentPage = 1; // Reset to first page
-                        displayPagination();
-                    }
-                } else {
-                    movieGrid.innerHTML = `<p>No results found. Please try again.</p>`;
-                }
-            })
-            .catch(error => {
-                movieGrid.innerHTML = `<p>Error fetching data. Please try again later.</p>`;
-                console.error('Error:', error);
-            });
+        const searchTerm = document.getElementById('movie-input').value.trim();
+        fetchAndDisplayMovies(1, searchTerm);
     });
 });
