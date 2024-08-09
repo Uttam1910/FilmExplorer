@@ -1,8 +1,9 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #f0f0f0;
+    color: #333;
     margin: 0;
-    padding: 0;
+    padding: 20px;
 }
 
 header {
@@ -79,4 +80,42 @@ h2 {
 p {
     margin: 5px 0;
     color: #555;
+}
+#movie-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.movie-card {
+    background-color: #fff;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.movie-card img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+#pagination-controls {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#pagination-controls button {
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#pagination-controls button:hover {
+    background-color: #0056b3;
 }
