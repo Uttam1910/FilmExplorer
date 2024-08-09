@@ -77,36 +77,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to display pagination controls
     function displayPagination() {
         const totalPages = Math.ceil(totalResults / moviesPerPage);
-        let paginationControls = document.getElementById('pagination-controls');
+        let prevButton = document.getElementById('prev-page');
+        let nextButton = document.getElementById('next-page');
         let currentPageDisplay = document.getElementById('current-page');
 
-        if (paginationControls && currentPageDisplay) {
-            paginationControls.innerHTML = '';
+        prevButton.style.display = currentPage > 1 ? 'inline-block' : 'none';
+        nextButton.style.display = currentPage < totalPages ? 'inline-block' : 'none';
 
-            // Previous button for all pages except the first
+        currentPageDisplay.textContent = `Page ${currentPage} of ${totalPages}`;
+
+        prevButton.onclick = function() {
             if (currentPage > 1) {
-                paginationControls.innerHTML += `<button id="prev-page" class="pagination-button">Previous</button>`;
-            }
-
-            // Next button for all pages except the last
-            if (currentPage < totalPages) {
-                paginationControls.innerHTML += `<button id="next-page" class="pagination-button">Next</button>`;
-            }
-
-            currentPageDisplay.textContent = `Page ${currentPage} of ${totalPages}`;
-
-            document.getElementById('prev-page')?.addEventListener('click', function() {
                 currentPage--;
                 fetchAndDisplayMovies(currentPage);
-            });
+            }
+        };
 
-            document.getElementById('next-page')?.addEventListener('click', function() {
+        nextButton.onclick = function() {
+            if (currentPage < totalPages) {
                 currentPage++;
                 fetchAndDisplayMovies(currentPage);
-            });
-        } else {
-            console.error('Pagination elements not found in the DOM.');
-        }
+            }
+        };
     }
 
     // Initial load of movies
@@ -157,6 +149,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         `;
                     } else {
                         displayMovies(data.Search);
+                        totalResults = data.totalResults; // Update total results for search
+                        currentPage = 1; // Reset to first page
+                        displayPagination();
                     }
                 } else {
                     movieGrid.innerHTML = `<p>No results found. Please try again.</p>`;
