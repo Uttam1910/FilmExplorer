@@ -15,8 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("API Response:", data); // Log the API response for debugging
                 if (data.Response === "True") {
                     totalResults = parseInt(data.totalResults, 10);
-                    displayMovies(data.Search);
-                    displayPagination();
+                    let movies = data.Search;
+
+                    // Check if the current page has fewer than 12 movies, and fetch additional movies if needed
+                    if (movies.length < moviesPerPage && page * 10 < totalResults) {
+                        fetchAdditionalMovies(page + 1, movies, moviesPerPage - movies.length);
+                    } else {
+                        displayMovies(movies);
+                        displayPagination();
+                    }
                 } else {
                     document.getElementById('movie-grid').innerHTML = `<p>No results found. Please try again.</p>`;
                 }
@@ -24,6 +31,29 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 document.getElementById('movie-grid').innerHTML = `<p>Error fetching data. Please try again later.</p>`;
                 console.error('Error:', error);
+            });
+    }
+
+    // Function to fetch additional movies if less than 12 were returned
+    function fetchAdditionalMovies(nextPage, currentMovies, remainingSlots) {
+        let apiUrl = `https://www.omdbapi.com/?s=batman&apikey=${apiKey}&type=movie&r=json&page=${nextPage}`;
+        console.log("Fetching additional movies from:", apiUrl);
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.Response === "True") {
+                    let moreMovies = data.Search.slice(0, remainingSlots);
+                    displayMovies(currentMovies.concat(moreMovies));
+                } else {
+                    displayMovies(currentMovies);
+                }
+                displayPagination();
+            })
+            .catch(error => {
+                displayMovies(currentMovies);
+                displayPagination();
+                console.error('Error fetching additional movies:', error);
             });
     }
 
@@ -53,12 +83,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (paginationControls && currentPageDisplay) {
             paginationControls.innerHTML = '';
 
+            // Previous button for all pages except the first
             if (currentPage > 1) {
-                paginationControls.innerHTML += `<button id="prev-page">Previous</button>`;
+                paginationControls.innerHTML += `<button id="prev-page" class="pagination-button">Previous</button>`;
             }
 
+            // Next button for all pages except the last
             if (currentPage < totalPages) {
-                paginationControls.innerHTML += `<button id="next-page">Next</button>`;
+                paginationControls.innerHTML += `<button id="next-page" class="pagination-button">Next</button>`;
             }
 
             currentPageDisplay.textContent = `Page ${currentPage} of ${totalPages}`;
