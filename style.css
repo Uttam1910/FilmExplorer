@@ -98,3 +98,47 @@ header {
     margin: 0 10px;
     font-weight: bold;
 }
+
+/* Responsive Design for Smaller Devices */
+@media (max-width: 1024px) {
+    #movie-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    #search-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #movie-input,
+    #search-type,
+    #search-button {
+        width: 100%;
+        margin: 5px 0;
+    }
+
+    #movie-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .movie-card {
+        padding: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    #movie-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 5px;
+    }
+
+    .movie-card {
+        padding: 5px;
+    }
+}
