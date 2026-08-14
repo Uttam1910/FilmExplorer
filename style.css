@@ -125,10 +125,16 @@ body{
 .movie-card{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);box-shadow:var(--card-elev);display:flex;flex-direction:column}
 .poster{width:100%;height:0;padding-bottom:150%;background:#0a0a0a;position:relative}
 .poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* Rating badge overlay */
+.poster .rating-badge{position:absolute;left:8px;top:8px;background:rgba(2,6,23,0.7);padding:6px 8px;border-radius:8px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px;backdrop-filter:blur(4px);}
+.poster .rating-badge .star{color:var(--accent);font-weight:800}
 .poster .skeleton{position:absolute;inset:0;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));}
 .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
 .movie-title{font-weight:700;margin:0}
 .movie-meta{color:var(--muted);font-size:13px}
+.movie-snapshot{display:flex;flex-direction:column;gap:6px}
+.meta-line{font-size:13px;color:var(--muted)}
+.meta-line .dot{margin:0 6px}
 .card-actions{display:flex;gap:8px;align-items:center;margin-top:auto}
 .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:10px;color:var(--text);cursor:pointer}
 .bookmark-btn{margin-left:auto}
@@ -137,6 +143,36 @@ body{
 .movie-card .overlay{position:absolute;inset:0;background:linear-gradient(180deg, transparent 40%, rgba(2,6,23,0.6));opacity:0;transition:opacity var(--transition-medium)}
 .movie-card:hover .overlay{opacity:1}
 .movie-card:hover{transform:translateY(-6px)}
+.movie-card .poster:hover img{ transform: scale(1.04); transition:transform var(--transition-medium);} 
+
+/* Card quick actions (desktop hover) */
+.card-quick{position:absolute;right:8px;bottom:8px;display:flex;gap:8px;opacity:0;transform:translateY(6px);transition:opacity 200ms var(--transition-medium), transform 200ms var(--transition-medium)}
+.movie-card:hover .card-quick{opacity:1;transform:translateY(0)}
+
+/* Carousel rows for mobile discovery */
+.carousel-row{display:flex;gap:12px;overflow:auto;padding:12px 0;scroll-snap-type:x mandatory}
+.carousel-row .movie-card{min-width:180px;flex:0 0 180px;scroll-snap-align:start}
+.category-row h4{margin:6px 0}
+
+/* Movie of the Day special styling */
+#movie-of-day .movie-card{display:flex;flex-direction:row;gap:12px;align-items:center;padding:12px}
+#movie-of-day .poster{flex:0 0 160px;padding-bottom:0;height:220px;border-radius:10px}
+#movie-of-day .card-body{padding:8px}
+
+/* Discover actions (Surprise Me) */
+.discover-actions{margin-top:8px}
+.discover-actions .btn-ghost{padding:8px 12px}
+
+/* Detail page extra actions */
+.detail-actions .action-btn{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;cursor:pointer}
+.detail-insight{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);}
+
+/* More like this carousel inside detail view */
+.more-like-carousel{display:flex;gap:12px;overflow:auto;padding:8px 0}
+.more-like-carousel .movie-card{min-width:140px;flex:0 0 140px}
+
+/* Share toast styling tweak */
+.toast.success{background:linear-gradient(90deg,#6fffb0,#5bb0ff);color:#021018}
 
 /* Modal */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:80}
@@ -231,6 +267,22 @@ body{
 @media (max-width:1100px){.movie-grid{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:880px){.movie-grid{grid-template-columns:repeat(2,1fr)}.nav{display:none}.mobile-only{display:inline-flex}}
 @media (max-width:520px){.movie-grid{grid-template-columns:1fr}.hero-title{font-size:24px}.search-form{flex-direction:column;align-items:stretch}.suggestions-panel{flex-direction:column}}
+
+/* Normalize unstyled buttons to avoid raw UA styling showing through */
+button:not([class]){
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background:transparent;border:0;color:var(--text);cursor:pointer;padding:8px;border-radius:8px;font:inherit;
+}
+
+/* Reduce hero vertical height on small screens for better one-handed reach */
+@media (max-width:520px){
+  .hero{padding:16px 12px}
+  .hero-title{font-size:20px}
+}
+
+/* Tighter title treatment inside details for a more cinematic hierarchy */
+.detail-inner h1{font-size:1.6rem;margin:0 0 6px 0}
+.detail-inner small.muted{font-size:0.9rem;color:var(--muted)}
 
 /* Accessibility helpers */
 .visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}

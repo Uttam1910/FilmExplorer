@@ -93,6 +93,39 @@
             </div>
         </section>
 
+        <!-- Discovery categories -->
+        <section id="categories" class="discover">
+            <div class="section-header">
+                <h2>Browse by Category</h2>
+                <p class="muted">Hand-picked rows to help you explore</p>
+            </div>
+
+            <div class="category-row">
+                <h4>Top Rated</h4>
+                <div id="cat-top-rated" class="carousel-row"></div>
+            </div>
+
+            <div class="category-row">
+                <h4>Action</h4>
+                <div id="cat-action" class="carousel-row"></div>
+            </div>
+
+            <div class="category-row">
+                <h4>Sci‑Fi</h4>
+                <div id="cat-scifi" class="carousel-row"></div>
+            </div>
+
+            <div class="category-row">
+                <h4>Comedy</h4>
+                <div id="cat-comedy" class="carousel-row"></div>
+            </div>
+
+            <div class="category-row">
+                <h4>More Like This / Classics</h4>
+                <div id="cat-classics" class="carousel-row"></div>
+            </div>
+        </section>
+
         <section id="recently-viewed" class="discover">
             <div class="section-header">
                 <h2>Recently Viewed</h2>
@@ -101,10 +134,22 @@
             <div id="recently-viewed-grid" class="movie-grid"></div>
         </section>
 
+        <!-- Movie of the Day (FilmExplorer's Pick) -->
+        <section id="movie-of-day" class="discover">
+            <div class="section-header">
+                <h2>Today's FilmExplorer Pick</h2>
+                <p class="muted">A curated pick selected for today</p>
+            </div>
+            <div id="movie-of-day-card" class="movie-grid"></div>
+        </section>
+
         <section id="discover" class="discover">
             <div class="section-header">
                 <h2>Discover</h2>
                 <p class="muted">Browse curated and recently viewed recommendations.</p>
+                <div class="discover-actions">
+                    <button id="surprise-me" class="btn-ghost">🎲 Surprise Me</button>
+                </div>
             </div>
             <div id="discover-grid" class="movie-grid"></div>
         </section>

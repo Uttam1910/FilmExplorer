@@ -54,6 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Small curated lists for discovery/trending
   const CURATED = ['Inception','Interstellar','The Dark Knight','Parasite','The Matrix','The Shawshank Redemption'];
   const POPULAR = ['Avengers','Titanic','Joker','Forrest Gump','Gladiator'];
+  // lightweight category seeds (small curated sets to avoid extra API usage)
+  const CAT_ACTION = ['Mad Max: Fury Road','John Wick','Gladiator','The Dark Knight'];
+  const CAT_SCIFI = ['Blade Runner 2049','The Matrix','Interstellar','Arrival'];
+  const CAT_COMEDY = ['The Grand Budapest Hotel','Superbad','Groundhog Day','Ghostbusters'];
+  const CAT_CLASSICS = ['Casablanca','Citizen Kane','The Godfather','Rear Window'];
 
   // --- Utilities ---
   function debounce(fn, wait=350){ let t; return (...a)=>{ clearTimeout(t); t = setTimeout(()=>fn(...a), wait); }; }
@@ -68,6 +73,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Toasts
   function toast(text, opts={timeout:3500}){ try{ const t = createNode('div',{class:'toast'},[text]); toastContainer.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.addEventListener('transitionend',()=>t.remove(),{once:true}); }, opts.timeout); }catch(e){} }
+
+  // clipboard helper
+  async function copyToClipboard(text){ try{ await navigator.clipboard.writeText(text); return true; }catch(e){ return false; } }
+
+  // open a YouTube search for <title> official trailer in a new tab
+  function openTrailerFor(title){ if(!title) return; const q = encodeURIComponent(title + ' official trailer'); const url = `https://www.youtube.com/results?search_query=${q}`; window.open(url, '_blank', 'noopener'); }
+
+  // Generate a deterministic short 'Why You Might Like It' insight from details
+  function generateInsight(d){ try{ if(!d) return null; const parts = []; const genres = (d.Genre && d.Genre!=='N/A') ? d.Genre.split(',').map(s=>s.trim()) : []; const runtime = (d.Runtime && d.Runtime!=='N/A') ? d.Runtime : ''; const year = d.Year || ''; const director = (d.Director && d.Director!=='N/A') ? d.Director.split(',')[0] : ''; const actors = (d.Actors && d.Actors!=='N/A') ? d.Actors.split(',').slice(0,2).join(', ') : ''; const rating = (d.imdbRating && d.imdbRating!=='N/A') ? `IMDb ${d.imdbRating}` : ''; // build phrases
+      if(genres.length) parts.push(`${genres[0]}${genres.length>1? ' • '+genres.slice(1,3).join(', '):''}`);
+      if(d.Plot && d.Plot!=='N/A'){
+        // pick short characteristic words from the plot
+        const p = d.Plot.split('.').filter(s=>s.trim()).slice(0,1)[0]; if(p) parts.push(p.trim());
+      }
+      const tail = [];
+      if(director) tail.push(`directed by ${director}`);
+      if(actors) tail.push(`starring ${actors}`);
+      if(runtime) tail.push(runtime);
+      if(year) tail.push(year);
+      if(rating) tail.push(rating);
+      const insight = parts.concat(tail).slice(0,3).join(' — ');
+      // if too short, return null
+      if(!insight || insight.length<20) return null; return insight;
+  }catch(e){ return null; } }
+
+  // Share helper: use Web Share API with fallback to clipboard + toast
+  async function shareMovie(d){ try{ const url = new URL(window.location.href); if(d && d.imdbID) url.searchParams.set('movie', d.imdbID); const shareUrl = url.toString(); const text = `${d.Title || 'FilmExplorer movie'} — ${d.Year || ''}`.trim(); if(navigator.share){ await navigator.share({ title: d.Title, text: `${text}\n\n${d.Plot? d.Plot.slice(0,140): ''}`, url: shareUrl }); toast('Shared'); return; } const ok = await copyToClipboard(shareUrl); if(ok) toast('Movie link copied'); else toast('Could not copy link'); }catch(e){ const ok = await copyToClipboard(window.location.href); if(ok) toast('Movie link copied'); else toast('Could not copy link'); } }
 
   // --- Bookmarks storage helpers ---
   const BOOKMARK_KEY = 'filmexplorer:bookmarks';
@@ -146,20 +178,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const img = document.createElement('img'); img.alt = d.Title||'Poster'; img.src = (d.Poster && d.Poster!=='N/A')? d.Poster : posterFallback(d.Title,400,600); img.addEventListener('error', ()=>{ img.src = posterFallback(d.Title,400,600); }); posterWrap.appendChild(img);
     const grid = createNode('div',{class:'detail-grid'},[]);
     const h = createNode('h1',{},[d.Title||'Untitled', createNode('small',{class:'muted'},[` ${d.Year||''}`])]);
-    const meta = createNode('div',{class:'detail-meta muted'},[ `${d.Runtime||''} • ${d.Genre||''} • ${d.Type||''}` ]);
-    const rating = createNode('div',{class:'muted'},[ `IMDb ${d.imdbRating || '—'} • ${d.imdbVotes || ''}` ]);
+    const meta = createNode('div',{class:'detail-meta muted'},[ `${d.Runtime && d.Runtime!=='N/A' ? d.Runtime : ''} ${d.Genre && d.Genre!=='N/A' ? '• '+d.Genre : ''}` ]);
+    const rating = (d.imdbRating && d.imdbRating!=='N/A') ? createNode('div',{class:'muted'},[ `⭐ ${d.imdbRating} • ${d.imdbVotes || ''}` ]) : null;
     const plot = d.Plot && d.Plot!=='N/A' ? createNode('p',{},[d.Plot]) : null;
     const people = createNode('div',{},[]);
     ['Director','Writer','Actors'].forEach(k=>{ if(d[k] && d[k]!=='N/A') people.appendChild(createNode('div',{},[ createNode('strong',{},[k+': ']), ' '+d[k] ])); });
     const production = createNode('div',{},[]);
     ['Language','Country','Awards','BoxOffice','Production','Released','DVD','Website'].forEach(k=>{ if(d[k] && d[k]!=='N/A') production.appendChild(createNode('div',{},[ createNode('strong',{},[k+': ']), ' '+d[k] ])); });
     const actions = createNode('div',{class:'detail-actions'},[]);
-    const imdbBtn = createNode('a',{href:d.imdbID?`https://www.imdb.com/title/${d.imdbID}/`:'#', target:'_blank', rel:'noopener', class:'btn-primary'},['Open on IMDb']);
-    const bmBtn = createNode('button',{class:'btn-ghost', onclick:()=>{ toggleBookmark(d); updateDetailBookmark(bmBtn,d); }},[ isBookmarked(d.imdbID||d.Title)?'Bookmarked':'Bookmark' ]);
-    actions.appendChild(imdbBtn); actions.appendChild(bmBtn);
+    // primary actions: Trailer, Watchlist, Share, IMDb
+    const trailerBtn = createNode('button',{class:'action-btn', onclick:()=> openTrailerFor(d.Title)},['▶ Trailer']);
+    const bmBtn = createNode('button',{class:'action-btn', onclick:()=>{ toggleBookmark(d); updateDetailBookmark(bmBtn,d); }},[ isBookmarked(d.imdbID||d.Title)?'Bookmarked':'+ Watchlist' ]);
+    const shareBtn = createNode('button',{class:'action-btn', onclick:()=> shareMovie(d)},['↗ Share']);
+    const imdbBtn = createNode('a',{href:d.imdbID?`https://www.imdb.com/title/${d.imdbID}/`:'#', target:'_blank', rel:'noopener', class:'action-btn'},['IMDb']);
+    actions.appendChild(trailerBtn); actions.appendChild(bmBtn); actions.appendChild(shareBtn); actions.appendChild(imdbBtn);
 
-    grid.appendChild(h); grid.appendChild(meta); grid.appendChild(rating); if(plot) grid.appendChild(plot); grid.appendChild(people); grid.appendChild(production); grid.appendChild(actions);
+    grid.appendChild(h); grid.appendChild(meta); if(rating) grid.appendChild(rating); if(plot) grid.appendChild(plot); grid.appendChild(people); grid.appendChild(production); grid.appendChild(actions);
+
+    // FilmExplorer Insight
+    const insightText = generateInsight(d);
+    if(insightText){ const insight = createNode('div',{class:'detail-insight'},[ createNode('h4',{},['Why You Might Like It']), createNode('p',{},[ insightText ]) ]); grid.appendChild(insight); }
+
+    // More Like This (placeholder carousel)
+    const moreLikeWrap = createNode('div',{class:'more-like'},[]);
+    const moreTitle = createNode('h4',{},['More Like This']);
+    const moreCarousel = createNode('div',{class:'more-like-carousel', id:'more-like-carousel'},[]);
+    moreLikeWrap.appendChild(moreTitle); moreLikeWrap.appendChild(moreCarousel); grid.appendChild(moreLikeWrap);
+
     inner.appendChild(posterWrap); inner.appendChild(grid);
+    // populate More Like This asynchronously
+    setTimeout(()=>{ loadMoreLikeThis(d); }, 60);
     return inner;
   }
 
@@ -230,25 +278,43 @@ document.addEventListener('DOMContentLoaded', () => {
     img.src = (m.Poster && m.Poster!=='N/A') ? m.Poster : posterFallback(m.Title);
     img.addEventListener('error', ()=>{ img.src = posterFallback(m.Title); });
     posterWrap.appendChild(img);
+    // rating badge if available (avoid extra API calls)
+    if(m.imdbRating && m.imdbRating!=='N/A'){
+      const rb = createNode('div',{class:'rating-badge'},[ createNode('span',{class:'star'},['⭐']), document.createTextNode(' '+m.imdbRating) ]);
+      posterWrap.appendChild(rb);
+    }
     const overlay = createNode('div',{class:'overlay'});
     posterWrap.appendChild(overlay);
 
     const body = createNode('div',{class:'card-body'});
     const title = createNode('h4',{class:'movie-title'},[m.Title||'Untitled']);
-    const meta = createNode('div',{class:'movie-meta'},[ `${m.Year||''} ${m.Type? '• '+m.Type: ''}` ]);
-    const actions = createNode('div',{class:'card-actions'});
-    const detailsBtn = createNode('button',{class:'btn-ghost', type:'button', onclick:()=> openDetails(id, m)},['Details']);
-    const imdbLink = m.imdbID ? createNode('a',{href:`https://www.imdb.com/title/${m.imdbID}/`, target:'_blank', rel:'noopener', class:'btn-ghost'},['IMDb']) : null;
-    const bmBtn = createNode('button',{class:'btn-ghost bookmark-btn', type:'button', onclick:()=> toggleBookmark(m)},[ isBookmarked(id)?'Bookmarked':'Bookmark' ]);
-    actions.appendChild(detailsBtn);
-    if(imdbLink) actions.appendChild(imdbLink);
-    actions.appendChild(bmBtn);
+    // snapshot metadata: rating, year/runtime, genre
+    const snapshot = createNode('div',{class:'movie-snapshot'},[]);
+    if(m.imdbRating && m.imdbRating!=='N/A') snapshot.appendChild(createNode('div',{class:'meta-line'},[ `⭐ ${m.imdbRating}` ]));
+    const line2 = [];
+    if(m.Year) line2.push(m.Year);
+    if(m.Runtime && m.Runtime!=='N/A') line2.push(m.Runtime);
+    if(line2.length) snapshot.appendChild(createNode('div',{class:'meta-line'},[ line2.join(' · ') ]));
+    if(m.Genre && m.Genre!=='N/A') snapshot.appendChild(createNode('div',{class:'meta-line'},[ m.Genre.split(',').slice(0,2).join(' · ') ]));
 
-    body.appendChild(title); body.appendChild(meta); body.appendChild(actions);
+    const actions = createNode('div',{class:'card-actions'});
+    const detailsBtn = createNode('button',{class:'btn-ghost', type:'button', onclick:()=> openDetails(id, m)},['View Details']);
+    const bmBtn = createNode('button',{class:'btn-ghost bookmark-btn', type:'button', onclick:()=> { toggleBookmark(m); updateAllCardBookmarkStates(); }},[ isBookmarked(id)?'Bookmarked':'+ Watchlist' ]);
+    // subtle IMDb secondary action
+    const imdbLink = m.imdbID ? createNode('a',{href:`https://www.imdb.com/title/${m.imdbID}/`, target:'_blank', rel:'noopener', class:'btn-ghost small-link', title:'Open on IMDb'},['IMDb ↗']) : null;
+    // Trailer quick action (non-blocking)
+    const trailerBtn = createNode('button',{class:'btn-ghost', type:'button', onclick:()=> openTrailerFor(m.Title)},['▶ Trailer']);
+    actions.appendChild(detailsBtn);
+    actions.appendChild(bmBtn);
+    if(imdbLink) actions.appendChild(imdbLink);
+    // keep trailer accessible but subtle
+    actions.appendChild(trailerBtn);
+
+    body.appendChild(title); body.appendChild(snapshot); body.appendChild(actions);
     card.appendChild(posterWrap); card.appendChild(body);
     container.appendChild(card);
 
-    // Hover & a11y: open details on click of poster
+    // Hover & a11y/touch: open details on click of poster
     posterWrap.addEventListener('click', ()=> openDetails(id,m));
   }
 
@@ -357,6 +423,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }catch(e){}
   }
 
+  // Load related movies by genre keywords (cached)
+  async function loadMoreLikeThis(d){ try{
+    const container = document.getElementById('more-like-carousel'); if(!container) return;
+    container.innerHTML = '';
+    const key = `filmexplorer:related:${d.imdbID||d.Title}`;
+    const cached = loadCache(key); if(cached){ cached.slice(0,8).forEach(i=> renderMovieCard(i, container)); return; }
+    if(!d.Genre || d.Genre==='N/A') return;
+    const firstGenre = d.Genre.split(',')[0].trim(); if(!firstGenre) return;
+    const res = await apiSearch(firstGenre,1,'movie'); const items = (res.items||[]).filter(i=> (i.imdbID||i.Title) !== (d.imdbID||d.Title)).slice(0,8);
+    if(!items || items.length===0) return;
+    saveCache(key, items, 1000*60*60*6); // 6h cache
+    items.forEach(i=> renderMovieCard(i, container));
+  }catch(e){ /* silently fail */ } }
+
+  // Movie of the Day (deterministic pick from curated + popular)
+  function renderMovieOfDay(){ try{ const candidates = CURATED.concat(POPULAR); const now = new Date(); const start = new Date(now.getFullYear(),0,0); const diff = now - start; const oneDay = 1000*60*60*24; const dayOfYear = Math.floor(diff/oneDay); const idx = dayOfYear % candidates.length; const title = candidates[idx]; const container = $('movie-of-day-card'); if(!container) return; container.innerHTML=''; // fetch the top search result for that title
+      apiSearch(title,1,'all').then(res=>{ const item = (res.items && res.items[0]); if(item) renderMovieCard(item, container); }).catch(()=>{});
+  }catch(e){}
+  }
+
+  // Seed category rows with small curated lists
+  function seedCategories(){ try{ seedGrid(CAT_ACTION, document.getElementById('cat-action')); seedGrid(CAT_SCIFI, document.getElementById('cat-scifi')); seedGrid(CAT_COMEDY, document.getElementById('cat-comedy')); seedGrid(CAT_CLASSICS, document.getElementById('cat-classics')); // top rated can reuse curated
+      seedGrid(CURATED, document.getElementById('cat-top-rated'));
+  }catch(e){}
+  }
+
+  // Surprise Me: pick a random available title from visible discovery sets
+  async function surpriseMe(){ try{ const el = $('surprise-me'); if(el) el.disabled = true; toast('Finding something for you...'); // collect candidates from currently rendered discover/trending grids
+      const ids = new Set(); const candidates = [];
+      document.querySelectorAll('#discover-grid .movie-card, #trending-grid .movie-card, #recently-viewed-grid .movie-card').forEach(c=>{ const id = c.getAttribute('data-id'); if(id && !ids.has(id)){ ids.add(id); const title = c.querySelector('.movie-title') ? c.querySelector('.movie-title').textContent.trim() : null; if(title) candidates.push({id,title}); } });
+      // fall back to curated/popular
+      if(candidates.length===0){ (CURATED.concat(POPULAR)).forEach(t=> candidates.push({id:t,title:t})); }
+      if(candidates.length===0){ if(el) el.disabled=false; return; }
+      // pick random
+      const pick = candidates[Math.floor(Math.random()*candidates.length)];
+      // fetch details if needed
+      // if pick.id looks like an imdbID (tt) open directly, else search
+      if(pick.id && String(pick.id).startsWith('tt')){ openDetails(pick.id, { imdbID: pick.id }); } else { // search by title
+        const res = await apiSearch(pick.title,1,'all'); const item = (res.items && res.items[0]); if(item) openDetails(item.imdbID||item.Title, item); }
+      if(el) el.disabled=false;
+  }catch(e){ if($('surprise-me')) $('surprise-me').disabled=false; } }
+
   // Show the search results view and hide other discovery sections
   function showSearchResultsView(){ const hideIds = ['recently-viewed','discover','trending','bookmarks']; hideIds.forEach(id=>{ const el = document.getElementById(id); if(el) el.hidden = true; }); const resultsSection = document.getElementById('results'); if(resultsSection) resultsSection.scrollIntoView({behavior:'smooth'}); }
 
@@ -424,7 +532,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // initial render
   function init(){ renderPopular(); renderRecent(); renderBookmarks(); seedGrid(CURATED, discoverGrid); seedGrid(POPULAR, trendingGrid); document.getElementById('year').textContent = new Date().getFullYear(); }
 
-  function boot(){ renderPopular(); renderRecent(); renderBookmarks(); renderRecentlyViewed(); seedGrid(CURATED, discoverGrid); seedGrid(POPULAR, trendingGrid); document.getElementById('year').textContent = new Date().getFullYear(); applyInitialUrl(); }
+  function boot(){ renderPopular(); renderRecent(); renderBookmarks(); renderRecentlyViewed(); seedGrid(CURATED, discoverGrid); seedGrid(POPULAR, trendingGrid); // additional discovery seeding
+    seedCategories(); renderMovieOfDay();
+    // hook Surprise Me control
+    const surprise = $('surprise-me'); if(surprise) surprise.addEventListener('click', (e)=>{ e.preventDefault(); surpriseMe(); });
+    document.getElementById('year').textContent = new Date().getFullYear(); applyInitialUrl(); }
   // ensure clear-button starts in correct state
   if(clearInputBtn) updateClearVisibility();
 
