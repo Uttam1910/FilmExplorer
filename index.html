@@ -1,38 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Search App</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FilmExplorer — Movie Discovery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='4' fill='%23071219'/%3E%3Cpath d='M4 7h16v3H4zM4 12h16v3H4z' fill='%235bb0ff'/%3E%3C/svg%3E">
 </head>
 <body>
-    <div class="container">
-        <h1>Movie Search</h1>
+    <header class="site-header" id="site-header">
+        <div class="container header-inner">
+            <div class="left">
+                <button id="mobile-menu-toggle" class="icon-btn mobile-only" aria-label="Open menu">≡</button>
+                <a href="#home" class="brand" aria-label="FilmExplorer home">
+                    <div class="logo-mark" aria-hidden="true">
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none"><rect x="1" y="3" width="22" height="14" rx="3" fill="var(--accent)"/><path d="M7 17c1-2 4-3 5-3s4 1 5 3" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="brand-text">
+                        <span class="app-name">FilmExplorer</span>
+                        <small class="tagline">Search. Discover. Bookmark.</small>
+                    </div>
+                </a>
+            </div>
 
-        <!-- Search Section -->
-        <div id="search-section">
-            <input type="text" id="movie-input" placeholder="Search for a movie...">
-            <select id="search-type">
-                <option value="title">Title</option>
-                <option value="actor">Actor</option>
-                <option value="director">Director</option>
-                <option value="writer">Writer</option>
-            </select>
-            <button id="search-button">Search</button>
+            <nav class="nav" id="primary-nav" aria-label="Primary navigation">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#discover" class="nav-link">Discover</a>
+                <a href="#trending" class="nav-link">Trending</a>
+                <a href="#bookmarks" class="nav-link" id="nav-bookmarks">Bookmarks <span id="bookmark-count" class="badge">0</span></a>
+            </nav>
+
+            <div class="right header-actions">
+                <div class="search-mini" id="search-mini" title="Quick search" aria-hidden="false">
+                    <button id="search-open" class="icon-btn" aria-label="Open search">🔎</button>
+                </div>
+                <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-pressed="false">🌓</button>
+            </div>
         </div>
 
-        <!-- Movie Grid -->
-        <div id="movie-grid" class="grid-container"></div>
+        <div id="mobile-drawer" class="mobile-drawer" aria-hidden="true">
+            <div class="drawer-inner">
+                <nav class="drawer-nav">
+                    <a href="#home" onclick="drawerNavigate('#home');return false;">Home</a>
+                    <a href="#discover" onclick="drawerNavigate('#discover');return false;">Discover</a>
+                    <a href="#trending" onclick="drawerNavigate('#trending');return false;">Trending</a>
+                    <a href="#bookmarks" onclick="drawerNavigate('#bookmarks');return false;">Bookmarks</a>
+                    <a href="#about" onclick="drawerNavigate('#about');return false;">About</a>
+                </nav>
+                <button id="mobile-drawer-close" class="btn-link">Close</button>
+            </div>
+        </div>
+    </header>
 
-        <!-- Pagination Controls -->
-        <div id="pagination-controls">
-            <button id="prev-page" class="pagination-button">Previous</button>
-            <span id="current-page">Page 1</span>
-            <button id="next-page" class="pagination-button">Next</button>
+    <main class="container main" id="home">
+        <section class="hero" id="hero">
+            <div class="eyebrow">MOVIE DISCOVERY</div>
+            <h1 class="hero-title">Discover your next favorite movie.</h1>
+            <p class="hero-sub">FilmExplorer helps you search, explore and bookmark cinematic stories — powered by OMDb.</p>
+
+            <form id="search-form" class="search-form" role="search" aria-label="Search movies">
+                <div class="search-input-wrap">
+                    <label for="movie-input" class="visually-hidden">Search titles</label>
+                    <input id="movie-input" name="q" type="search" placeholder="Search titles, e.g. Inception, Nolan, Parasite" autocomplete="off" aria-autocomplete="list" aria-controls="suggestions-panel">
+                    <button id="clear-input" class="icon-btn clear-btn" aria-label="Clear search">✕</button>
+                </div>
+
+                <div class="search-controls">
+                    <label class="visually-hidden" for="search-type">Type</label>
+                    <select id="search-type" aria-label="Media type">
+                        <option value="all">All</option>
+                        <option value="movie">Movie</option>
+                        <option value="series">Series</option>
+                        <option value="episode">Episode</option>
+                    </select>
+                    <button id="search-button" type="submit" class="btn-primary">Search</button>
+                </div>
+            </form>
+
+            <div id="suggestions-panel" class="suggestions-panel" hidden aria-hidden="true">
+                <div class="suggest-col">
+                    <h4>Recent</h4>
+                    <ul id="recent-list" class="suggest-list"></ul>
+                    <button id="clear-recent" class="btn-link small">Clear recent</button>
+                </div>
+                <div class="suggest-col">
+                    <h4>Popular</h4>
+                    <ul id="popular-list" class="suggest-list"></ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="recently-viewed" class="discover">
+            <div class="section-header">
+                <h2>Recently Viewed</h2>
+                <p class="muted">Movies you opened recently</p>
+            </div>
+            <div id="recently-viewed-grid" class="movie-grid"></div>
+        </section>
+
+        <section id="discover" class="discover">
+            <div class="section-header">
+                <h2>Discover</h2>
+                <p class="muted">Browse curated and recently viewed recommendations.</p>
+            </div>
+            <div id="discover-grid" class="movie-grid"></div>
+        </section>
+
+        <section id="trending" class="discover">
+            <div class="section-header">
+                <h2>Trending Now</h2>
+                <p class="muted">Curated trending picks and editor's choices.</p>
+            </div>
+            <div id="trending-grid" class="movie-grid"></div>
+        </section>
+
+        <section id="results" class="results-section" aria-live="polite">
+            <div class="results-header">
+                <h3 id="results-title">Search results</h3>
+                <div class="results-controls">
+                    <div id="result-count" class="muted"></div>
+                </div>
+            </div>
+            <div id="status-line" class="status-line" aria-live="polite"></div>
+            <div id="movie-grid" class="movie-grid" aria-live="polite"></div>
+            <div id="pagination-controls" class="pagination-controls" aria-hidden="false">
+                <button id="load-more" class="pagination-button">Load more</button>
+                <span id="total-results" class="muted" style="margin-left:12px"></span>
+            </div>
+        </section>
+
+        <section id="bookmarks" class="bookmarks-section" hidden>
+            <div class="section-header">
+                <h2>Your Watchlist</h2>
+                <p class="muted">Saved movies and series you bookmarked.</p>
+            </div>
+            <div id="bookmarks-grid" class="movie-grid"></div>
+            <div id="bookmarks-empty" class="empty-state muted" hidden>
+                <h4>Your watchlist is waiting.</h4>
+                <p>Add bookmarks to save movies here.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="footer-left">
+                <strong>FilmExplorer</strong>
+                <div class="muted">Search. Discover. Bookmark.</div>
+            </div>
+            <div class="footer-links">
+                <a href="#home">Home</a>
+                <a href="#discover">Discover</a>
+                <a href="#bookmarks">Bookmarks</a>
+                <a href="#about">About</a>
+                <a href="https://www.imdb.com/" target="_blank" rel="noopener">IMDb</a>
+            </div>
+            <div class="footer-right muted">Movie data & posters by OMDb · <span id="year"></span></div>
+        </div>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <button id="modal-close" class="icon-btn modal-close" aria-label="Close">✕</button>
+            <div id="modal-content"></div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Full-screen detail view (used on mobile and desktop for consistent layout) -->
+    <div id="detail-backdrop" class="detail-backdrop" aria-hidden="true" hidden></div>
+    <div id="detail-view" class="detail-view" aria-hidden="true" hidden>
+        <div class="detail-top">
+            <button id="detail-back" class="detail-back" aria-label="Back">← Back</button>
+        </div>
+        <div id="detail-content" class="detail-content"></div>
+    </div>
+
+    <script src="script.js" defer></script>
 </body>
 </html>
